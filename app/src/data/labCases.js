@@ -1,0 +1,302 @@
+export const labCases = [
+  {
+    "case_id": "NET-001",
+    "symptom": "PC-1 in VLAN 10 gets an IP (192.168.10.15) but cannot ping Server-1 (192.168.30.50) in VLAN 30. Local gateway ping succeeds.",
+    "topology_note": "Switch-1 connected to Router-1 via GigabitEthernet0/0/1 (ROUTER-ON-A-STICK). PC-1 connected to Switch-1 Fa0/1.",
+    "show_outputs": "Switch-1# show interfaces trunk\nPort        Mode         Encapsulation  Status        Native vlan\nFa0/24      auto         802.1q         trunking      1\n\nPort        Vlans allowed on trunk\nFa0/24      1-10,20\n\nRouter-1# show ip interface brief\nInterface              IP-Address      OK? Method Status                Protocol\nGigabitEthernet0/0/1   unassigned      YES unset  up                    up\nGigabitEthernet0/0/1.10 192.168.10.1   YES NVRAM  up                    up\nGigabitEthernet0/0/1.30 192.168.30.1   YES NVRAM  up                    up",
+    "expected_fault": "VLAN 30 is missing from allowed list on trunk interface Fa0/24 on Switch-1.",
+    "osi_layer": "Layer 2",
+    "concept_tag": "VLAN & Trunking",
+    "severity": "High"
+  },
+  {
+    "case_id": "NET-002",
+    "symptom": "PC-2 connected to Switch-2 interface Fa0/5 has no network connectivity and stays in APIPA address range (169.254.x.x).",
+    "topology_note": "PC-2 intended for Accounting VLAN 20. Switch-2 Fa0/5 configured for host.",
+    "show_outputs": "Switch-2# show running-config interface FastEthernet0/5\nBuilding configuration...\nCurrent configuration :\n!\ninterface FastEthernet0/5\n switchport mode access\n switchport access vlan 99\n!\nSwitch-2# show vlan brief\nVLAN Name                             Status    Ports\n---- -------------------------------- --------- -------------------------------\n1    default                          active    Fa0/1, Fa0/2, Fa0/3, Fa0/4\n10   Engineering                      active    Fa0/6, Fa0/7\n20   Accounting                       active    Fa0/8, Fa0/9\n99   Unused_Blackhole                 active    Fa0/5",
+    "expected_fault": "Access port Fa0/5 is assigned to blackhole VLAN 99 instead of Accounting VLAN 20.",
+    "osi_layer": "Layer 2",
+    "concept_tag": "VLAN & Trunking",
+    "severity": "Medium"
+  },
+  {
+    "case_id": "NET-003",
+    "symptom": "Inter-switch trunk between Switch-A and Switch-B flaps continuously and CDP reports Native VLAN mismatch error.",
+    "topology_note": "Switch-A Fa0/24 connected to Switch-B Fa0/24. Trunking link.",
+    "show_outputs": "Switch-A# show interfaces Fa0/24 switchport\nName: Fa0/24\nOperational Mode: trunk\nAdministrative Native VLAN tagging: disabled\nAdministrative Mode: trunk\nAccess Mode VLAN: 1 (default)\nTrunking Native Mode VLAN: 10 (Sales)\n\nSwitch-B# show interfaces Fa0/24 switchport\nName: Fa0/24\nOperational Mode: trunk\nAdministrative Mode: trunk\nAccess Mode VLAN: 1 (default)\nTrunking Native Mode VLAN: 20 (Mgmt)",
+    "expected_fault": "Native VLAN mismatch: Switch-A is set to VLAN 10 while Switch-B is set to VLAN 20 on trunk link Fa0/24.",
+    "osi_layer": "Layer 2",
+    "concept_tag": "VLAN & Trunking",
+    "severity": "High"
+  },
+  {
+    "case_id": "NET-004",
+    "symptom": "Dynamic trunk negotiation failed between Switch-X and Switch-Y; interface remains in access mode.",
+    "topology_note": "Direct ethernet link between Switch-X Gi0/1 and Switch-Y Gi0/1.",
+    "show_outputs": "Switch-X# show interfaces Gi0/1 switchport\nAdministrative Mode: dynamic auto\nOperational Mode: static access\nNegotiation of Trunking: On\n\nSwitch-Y# show interfaces Gi0/1 switchport\nAdministrative Mode: dynamic auto\nOperational Mode: static access\nNegotiation of Trunking: On",
+    "expected_fault": "Both ends of the link are set to 'dynamic auto'. DTP requires at least one end set to 'dynamic desirable' or explicit 'trunk'.",
+    "osi_layer": "Layer 2",
+    "concept_tag": "VLAN & Trunking",
+    "severity": "Medium"
+  },
+  {
+    "case_id": "NET-005",
+    "symptom": "VLAN 40 traffic does not cross core switches despite trunk link active.",
+    "topology_note": "Core-SW1 and Core-SW2 linked via Port-Channel 1.",
+    "show_outputs": "Core-SW1# show vlan brief\nVLAN Name                             Status    Ports\n1    default                          active    \n10   HQ                               active    \n20   Branch                           active    \n\nCore-SW1# show interfaces trunk\nPort        Mode         Encapsulation  Status        Native vlan\nPo1         on           802.1q         trunking      1\nPo1         Vlans allowed and active in management domain: 1,10,20",
+    "expected_fault": "VLAN 40 has not been created in the VLAN database on Core-SW1.",
+    "osi_layer": "Layer 2",
+    "concept_tag": "VLAN & Trunking",
+    "severity": "Medium"
+  },
+  {
+    "case_id": "NET-006",
+    "symptom": "PC-3 has IP 10.1.10.45/24 but cannot communicate with PC-4 (10.1.10.130/24) on the same VLAN and switch.",
+    "topology_note": "Both PCs connected to Access-SW1 in VLAN 10.",
+    "show_outputs": "PC-3 IP configuration:\nIP Address: 10.1.10.45\nSubnet Mask: 255.255.255.0\nDefault Gateway: 10.1.10.1\n\nPC-4 IP configuration:\nIP Address: 10.1.10.130\nSubnet Mask: 255.255.255.128\nDefault Gateway: 10.1.10.1",
+    "expected_fault": "Subnet mask mismatch on PC-4 (255.255.255.128 restricts host range to .128-.254, placing PC-3 outside its local subnet).",
+    "osi_layer": "Layer 3",
+    "concept_tag": "IP & Gateway",
+    "severity": "High"
+  },
+  {
+    "case_id": "NET-007",
+    "symptom": "PC-5 can ping local subnet devices but cannot access external internet or other subnets.",
+    "topology_note": "PC-5 IP is 192.168.1.50/24. Router LAN interface is 192.168.1.1.",
+    "show_outputs": "PC-5 IP Configuration:\nIP Address: 192.168.1.50\nSubnet Mask: 255.255.255.0\nDefault Gateway: 192.168.1.254\n\nRouter-HQ# show ip interface brief\nInterface              IP-Address      OK? Method Status                Protocol\nGigabitEthernet0/0/0   192.168.1.1     YES NVRAM  up                    up",
+    "expected_fault": "Misconfigured Default Gateway on PC-5 (set to 192.168.1.254 instead of Router interface 192.168.1.1).",
+    "osi_layer": "Layer 3",
+    "concept_tag": "IP & Gateway",
+    "severity": "High"
+  },
+  {
+    "case_id": "NET-008",
+    "symptom": "Duplicate IP address alert on PC-6; intermittent network dropouts on server subnet.",
+    "topology_note": "Static assignment on Printer-1 and DHCP pool assignment on Router-1.",
+    "show_outputs": "Router-1# show ip dhcp binding\nIP address       Client-ID/Hardware address   Expiration           Type\n192.168.5.10     0100.e0.4c.39.11.22          Aug 24 2026 12:00 PM Automatic\n\nPrinter-1 configuration:\nIP Address: 192.168.5.10 (Statically configured)\nSubnet Mask: 255.255.255.0\n\nRouter-1# show running-config | include dhcp\nip dhcp pool LAN_POOL\n network 192.168.5.0 255.255.255.0\n default-router 192.168.5.1",
+    "expected_fault": "Static IP 192.168.5.10 was assigned to Printer-1 without being excluded from the DHCP pool via 'ip dhcp excluded-address'.",
+    "osi_layer": "Layer 3",
+    "concept_tag": "IP & Gateway",
+    "severity": "High"
+  },
+  {
+    "case_id": "NET-009",
+    "symptom": "VLAN 50 subinterface is down; clients in VLAN 50 cannot reach default gateway.",
+    "topology_note": "Router-1 handling inter-VLAN routing via subinterfaces on Gi0/0/0.",
+    "show_outputs": "Router-1# show ip interface brief\nInterface              IP-Address      OK? Method Status                Protocol\nGigabitEthernet0/0/0   unassigned      YES unset  administratively down down\nGigabitEthernet0/0/0.50 172.16.50.1    YES NVRAM  administratively down down",
+    "expected_fault": "Physical interface GigabitEthernet0/0/0 is administratively down (missing 'no shutdown' command).",
+    "osi_layer": "Layer 1/2",
+    "concept_tag": "IP & Gateway",
+    "severity": "Critical"
+  },
+  {
+    "case_id": "NET-0010",
+    "symptom": "Subinterface encapsulation error; router drops VLAN 15 tagged frames.",
+    "topology_note": "Router-1 Gi0/0/1.15 connected to Switch trunk.",
+    "show_outputs": "Router-1# show running-config interface GigabitEthernet0/0/1.15\nBuilding configuration...\n!\ninterface GigabitEthernet0/0/1.15\n ip address 10.15.0.1 255.255.255.0\n!",
+    "expected_fault": "Missing 'encapsulation dot1Q 15' command on subinterface GigabitEthernet0/0/1.15.",
+    "osi_layer": "Layer 2/3",
+    "concept_tag": "IP & Gateway",
+    "severity": "High"
+  },
+  {
+    "case_id": "NET-0011",
+    "symptom": "DHCP clients on remote subnet (VLAN 20) fail to receive IP addresses from central DHCP server.",
+    "topology_note": "Client on Switch-Access VLAN 20. DHCP Server connected to Router-Core.",
+    "show_outputs": "Router-Branch# show running-config interface GigabitEthernet0/0/0.20\nBuilding configuration...\n!\ninterface GigabitEthernet0/0/0.20\n encapsulation dot1Q 20\n ip address 172.20.0.1 255.255.255.0\n!",
+    "expected_fault": "Missing 'ip helper-address <DHCP_Server_IP>' on subinterface GigabitEthernet0/0/0.20 to relay DHCP requests.",
+    "osi_layer": "Layer 3/7",
+    "concept_tag": "DHCP & DNS",
+    "severity": "High"
+  },
+  {
+    "case_id": "NET-0012",
+    "symptom": "DHCP pool exhausted; new laptops cannot obtain IP address on Wi-Fi network.",
+    "topology_note": "Router-WIFI running DHCP server for guest subnet 192.168.100.0/28.",
+    "show_outputs": "Router-WIFI# show ip dhcp pool GUEST_POOL\nPool GUEST_POOL :\n Utilization mark (high/low)    : 100 / 0\n Subnet size (total/total addresses) : 14 / 14\n Total leased addresses          : 14\n Pending event                   : none\n 1 192.168.100.0 255.255.255.240",
+    "expected_fault": "DHCP subnet mask is too restrictive (/28 allowing only 14 usable hosts) resulting in pool exhaustion.",
+    "osi_layer": "Layer 3/7",
+    "concept_tag": "DHCP & DNS",
+    "severity": "Medium"
+  },
+  {
+    "case_id": "NET-0013",
+    "symptom": "Clients receive IP via DHCP but cannot resolve domain names (e.g. cisco.lab). IP access works.",
+    "topology_note": "DHCP Server running on Router-HQ.",
+    "show_outputs": "Router-HQ# show running-config | section ip dhcp pool\nip dhcp pool CORP_POOL\n network 10.0.0.0 255.255.0.0\n default-router 10.0.0.1\n dns-server 10.0.254.254\n\nRouter-HQ# show ip route 10.0.254.254\n% Network not in table\n\nDNS Server real IP: 10.0.100.53",
+    "expected_fault": "Misconfigured DNS server IP (10.0.254.254) in DHCP pool options; actual DNS server IP is 10.0.100.53.",
+    "osi_layer": "Layer 7",
+    "concept_tag": "DHCP & DNS",
+    "severity": "Medium"
+  },
+  {
+    "case_id": "NET-0014",
+    "symptom": "DHCP service not responding to broadcast requests anywhere in the branch router.",
+    "topology_note": "Router-Branch configured with DHCP pools.",
+    "show_outputs": "Router-Branch# show running-config | include dhcp\nno service dhcp\nip dhcp pool LAN\n network 192.168.10.0 255.255.255.0",
+    "expected_fault": "DHCP service is explicitly disabled via 'no service dhcp' in router global configuration.",
+    "osi_layer": "Layer 7",
+    "concept_tag": "DHCP & DNS",
+    "severity": "High"
+  },
+  {
+    "case_id": "NET-0015",
+    "symptom": "Branch office PCs cannot access HQ servers or Internet; ping to local gateway works.",
+    "topology_note": "Branch-R1 connected to ISP/HQ-R1 via Serial0/1/0.",
+    "show_outputs": "Branch-R1# show ip route\nCodes: C - connected, S - static, R - RIP, M - mobile, B - BGP\nGateway of last resort is not set\n\n     192.168.10.0/24 is subnetted, 1 subnets\nC       192.168.10.0 is directly connected, GigabitEthernet0/0/0\n     10.1.1.0/30 is subnetted, 1 subnets\nC       10.1.1.0 is directly connected, Serial0/1/0",
+    "expected_fault": "Missing default static route ('ip route 0.0.0.0 0.0.0.0 Serial0/1/0' or next-hop IP) on Branch-R1.",
+    "osi_layer": "Layer 3",
+    "concept_tag": "Routing",
+    "severity": "Critical"
+  },
+  {
+    "case_id": "NET-0016",
+    "symptom": "OSPF neighbor adjacency fails to form between Router-A and Router-B over WAN link.",
+    "topology_note": "Router-A Gi0/0/0 (10.0.0.1/30) connected to Router-B Gi0/0/0 (10.0.0.2/30).",
+    "show_outputs": "Router-A# show ip ospf interface GigabitEthernet0/0/0\nGigabitEthernet0/0/0 is up, line protocol is up\n  Process ID 1, Router ID 1.1.1.1, Network Type BROADCAST, Cost: 1\n  Area ID 0.0.0.0\n\nRouter-B# show ip ospf interface GigabitEthernet0/0/0\nGigabitEthernet0/0/0 is up, line protocol is up\n  Process ID 1, Router ID 2.2.2.2, Network Type BROADCAST, Cost: 1\n  Area ID 0.0.0.1",
+    "expected_fault": "OSPF Area ID mismatch: Router-A interface is in Area 0 while Router-B interface is in Area 1.",
+    "osi_layer": "Layer 3",
+    "concept_tag": "Routing",
+    "severity": "High"
+  },
+  {
+    "case_id": "NET-0017",
+    "symptom": "OSPF neighbor state stuck in INIT/EXSTART between R-East and R-West.",
+    "topology_note": "GigabitEthernet connection between R-East and R-West.",
+    "show_outputs": "R-East# show ip ospf interface Gi0/0\n  Timer intervals configured, Hello 10, Dead 40, Wait 40, Retransmit 5\n\nR-West# show ip ospf interface Gi0/0\n  Timer intervals configured, Hello 20, Dead 80, Wait 80, Retransmit 5",
+    "expected_fault": "OSPF Hello/Dead timer mismatch (R-East Hello=10s vs R-West Hello=20s).",
+    "osi_layer": "Layer 3",
+    "concept_tag": "Routing",
+    "severity": "High"
+  },
+  {
+    "case_id": "NET-0018",
+    "symptom": "EIGRP routes are not advertised between HQ-R1 and Branch-R2.",
+    "topology_note": "HQ-R1 and Branch-R2 running EIGRP for routing updates.",
+    "show_outputs": "HQ-R1# show running-config | section router eigrp\nrouter eigrp 100\n network 10.0.0.0\n network 172.16.0.0\n\nBranch-R2# show running-config | section router eigrp\nrouter eigrp 200\n network 10.0.0.0\n network 192.168.1.0",
+    "expected_fault": "EIGRP Autonomous System (AS) number mismatch: HQ-R1 uses AS 100 while Branch-R2 uses AS 200.",
+    "osi_layer": "Layer 3",
+    "concept_tag": "Routing",
+    "severity": "High"
+  },
+  {
+    "case_id": "NET-0019",
+    "symptom": "OSPF enabled on Router-3, but neighbor router receives no OSPF LSAs from Gi0/0/1 link.",
+    "topology_note": "Router-3 Gi0/0/1 connects to Core-Switch.",
+    "show_outputs": "Router-3# show running-config | section router ospf\nrouter ospf 1\n router-id 3.3.3.3\n passive-interface GigabitEthernet0/0/1\n network 10.3.0.0 0.0.0.255 area 0",
+    "expected_fault": "Interface GigabitEthernet0/0/1 is set as passive-interface, suppressing OSPF hello packets on routing link.",
+    "osi_layer": "Layer 3",
+    "concept_tag": "Routing",
+    "severity": "Medium"
+  },
+  {
+    "case_id": "NET-0020",
+    "symptom": "Static route configured on Router-X for 172.16.0.0/16 is ignored in favor of unexpected path.",
+    "topology_note": "Router-X has static route and OSPF route to destination.",
+    "show_outputs": "Router-X# show running-config | include ip route\nip route 172.16.0.0 255.255.0.0 10.0.0.2 130\n\nRouter-X# show ip route 172.16.0.0\nRouting entry for 172.16.0.0/16\n  Known via \"ospf 1\", distance 110, metric 20",
+    "expected_fault": "The static route was assigned a floating administrative distance of 130, which is higher than OSPF (110).",
+    "osi_layer": "Layer 3",
+    "concept_tag": "Routing",
+    "severity": "Medium"
+  },
+  {
+    "case_id": "NET-0021",
+    "symptom": "HR department (192.168.20.0/24) can reach local servers, but HTTPS (port 443) to Web Server (10.0.0.80) fails.",
+    "topology_note": "Router-FW interface Gi0/0/0 facing HR subnet.",
+    "show_outputs": "Router-FW# show access-lists\nExtended IP access list FILTER_HR\n    10 permit tcp 192.168.20.0 0.0.0.255 host 10.0.0.80 eq www\n    20 deny ip any any (45 matches)\n\nRouter-FW# show running-config interface GigabitEthernet0/0/0\ninterface GigabitEthernet0/0/0\n ip access-group FILTER_HR in",
+    "expected_fault": "ACL FILTER_HR permits HTTP (eq www / port 80) but lacks a permit rule for HTTPS (eq 443 / eq https), so implicit deny blocks HTTPS.",
+    "osi_layer": "Layer 4",
+    "concept_tag": "ACL",
+    "severity": "High"
+  },
+  {
+    "case_id": "NET-0022",
+    "symptom": "ACL intended to block Guest Wi-Fi (172.16.99.0/24) from accessing Internal LAN (10.0.0.0/8) is ineffective.",
+    "topology_note": "Guest traffic enters Router-GW on Gi0/0/1.",
+    "show_outputs": "Router-GW# show running-config interface GigabitEthernet0/0/1\nBuilding configuration...\n!\ninterface GigabitEthernet0/0/1\n ip address 172.16.99.1 255.255.255.0\n ip access-group BLOCK_GUEST out\n!\nRouter-GW# show access-lists BLOCK_GUEST\nExtended IP access list BLOCK_GUEST\n    10 deny ip 172.16.99.0 0.0.0.255 10.0.0.0 0.255.255.255\n    20 permit ip any any",
+    "expected_fault": "ACL direction error: 'ip access-group BLOCK_GUEST out' applied on inbound interface Gi0/0/1 instead of 'in'.",
+    "osi_layer": "Layer 3/4",
+    "concept_tag": "ACL",
+    "severity": "High"
+  },
+  {
+    "case_id": "NET-0023",
+    "symptom": "ACL wildcard mask error causes entire subnet block instead of single host 192.168.1.50.",
+    "topology_note": "Router-1 filtering specific management workstation.",
+    "show_outputs": "Router-1# show access-lists SECURE_MGMT\nStandard IP access list SECURE_MGMT\n    10 permit 192.168.1.50 255.255.255.255\n    20 deny any",
+    "expected_fault": "Inverted wildcard mask syntax: Standard ACL requires wildcard mask '0.0.0.0' or host keyword for host IP, not subnet mask '255.255.255.255'.",
+    "osi_layer": "Layer 3/4",
+    "concept_tag": "ACL",
+    "severity": "High"
+  },
+  {
+    "case_id": "NET-0024",
+    "symptom": "All traffic from Sales VLAN is blocked after adding permit line 30 to ACL.",
+    "topology_note": "Router-1 applying access list to Sales gateway.",
+    "show_outputs": "Router-1# show access-lists SALES_POLICY\nExtended IP access list SALES_POLICY\n    10 deny ip any any\n    20 permit tcp 192.168.10.0 0.0.0.255 host 10.1.1.5 eq 80\n    30 permit ip 192.168.10.0 0.0.0.255 any",
+    "expected_fault": "Line order error: Line 10 'deny ip any any' matches all packets first, rendering subsequent permit statements unreachable.",
+    "osi_layer": "Layer 3/4",
+    "concept_tag": "ACL",
+    "severity": "Critical"
+  },
+  {
+    "case_id": "NET-0025",
+    "symptom": "Telnet/SSH access to Router-1 fails from Network Admin subnet 10.10.10.0/24.",
+    "topology_note": "VTY lines configured with access-class.",
+    "show_outputs": "Router-1# show running-config | section line vty\nline vty 0 4\n access-class 50 in\n login local\n transport input ssh\n\nRouter-1# show access-lists 50\nStandard IP access list 50\n    10 permit 10.10.20.0, wildcard bits 0.0.0.255",
+    "expected_fault": "VTY access-list 50 permits subnet 10.10.20.0/24 instead of Admin subnet 10.10.10.0/24.",
+    "osi_layer": "Layer 7",
+    "concept_tag": "ACL",
+    "severity": "Medium"
+  },
+  {
+    "case_id": "NET-0026",
+    "symptom": "LAN hosts behind Router-NAT (192.168.1.0/24) cannot reach external IP 8.8.8.8.",
+    "topology_note": "Router-NAT Gi0/0/0 connected to LAN; Gi0/0/1 connected to ISP.",
+    "show_outputs": "Router-NAT# show ip nat statistics\nTotal active translations: 0 (0 static, 0 dynamic; 0 extended)\nOutside interfaces:\n  GigabitEthernet0/0/1\nInside interfaces:\n  (None)",
+    "expected_fault": "Missing 'ip nat inside' configuration on LAN interface GigabitEthernet0/0/0.",
+    "osi_layer": "Layer 3",
+    "concept_tag": "NAT",
+    "severity": "High"
+  },
+  {
+    "case_id": "NET-0027",
+    "symptom": "Dynamic NAT Overload (PAT) fails for subnet 192.168.20.0/24; ping to public internet drops.",
+    "topology_note": "Router-Edge translating LAN subnets to WAN interface.",
+    "show_outputs": "Router-Edge# show running-config | include nat\nip nat inside source list NAT_ACL interface GigabitEthernet0/0/1 overload\n\nRouter-Edge# show access-lists NAT_ACL\nStandard IP access list NAT_ACL\n    10 permit 192.168.10.0, wildcard bits 0.0.0.255",
+    "expected_fault": "NAT ACL NAT_ACL only permits 192.168.10.0/24; subnet 192.168.20.0/24 is omitted and blocked by implicit deny.",
+    "osi_layer": "Layer 3",
+    "concept_tag": "NAT",
+    "severity": "High"
+  },
+  {
+    "case_id": "NET-0028",
+    "symptom": "External users cannot access internal Web Server via Static NAT public IP 203.0.113.10.",
+    "topology_note": "Static NAT maps public 203.0.113.10 to private Web Server.",
+    "show_outputs": "Router-Edge# show ip nat translations\nPro Inside global      Inside local       Outside local      Outside global\n--- 203.0.113.10       192.168.1.150      ---                ---\n\nWeb Server IP configuration:\nIP Address: 192.168.1.105\nSubnet Mask: 255.255.255.0",
+    "expected_fault": "Typo in Static NAT inside local address: configured as 192.168.1.150 instead of actual Web Server IP 192.168.1.105.",
+    "osi_layer": "Layer 3",
+    "concept_tag": "NAT",
+    "severity": "High"
+  },
+  {
+    "case_id": "NET-0029",
+    "symptom": "Wireless clients fail WPA2 Enterprise / PSK authentication on SSID 'Cisco-Corp'.",
+    "topology_note": "Laptop connecting to Wireless Access Point AP-1.",
+    "show_outputs": "WLC-1# show wlan 1\nWLAN Identifier.................................. 1\nProfile Name..................................... Cisco-Corp\nNetwork Name (SSID).............................. Cisco-Corp\nStatus........................................... Enabled\nSecurity Policy.................................. [WPA2][PSK][AES]\nPre-Shared Key................................... Cisco12345!\n\nLaptop Wireless Properties:\nSSID: Cisco-Corp\nSecurity Type: WPA2-Personal\nKey: cisco12345! (lowercase 'c')",
+    "expected_fault": "Case-sensitivity Pre-Shared Key mismatch on Laptop client ('cisco12345!' vs 'Cisco12345!').",
+    "osi_layer": "Layer 2",
+    "concept_tag": "Wireless",
+    "severity": "Medium"
+  },
+  {
+    "case_id": "NET-0030",
+    "symptom": "Guest Wi-Fi users can browse corporate internal servers (10.0.0.0/8), violating security policy.",
+    "topology_note": "Guest Wi-Fi mapped to VLAN 90 on WLC and Access Switch.",
+    "show_outputs": "Router-GW# show running-config interface GigabitEthernet0/0/0.90\ninterface GigabitEthernet0/0/0.90\n encapsulation dot1Q 90\n ip address 172.30.90.1 255.255.255.0",
+    "expected_fault": "Guest isolation failure: Missing outbound/inbound ACL on Guest VLAN interface GigabitEthernet0/0/0.90 to block access to corporate 10.0.0.0/8 networks.",
+    "osi_layer": "Layer 3/4",
+    "concept_tag": "Wireless",
+    "severity": "High"
+  }
+];
